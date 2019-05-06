@@ -80,3 +80,84 @@ static Mat prepareDataForPCA(const vector<Mat> &images)
     // Copy the long vector into one row of the dest
     images[i].copyTo(data.row(i)); 
   }
+
+  cout << "DONE" << endl;
+  return data;
+}
+    
+void showQueryImage(const String &dirname, int &index)
+    {
+        vector<String> files;
+        glob(dirname, files);
+        Mat img = imread(files[index], IMREAD_UNCHANGED); 
+        namedWindow("Query Image", WINDOW_AUTOSIZE);
+        imshow("Query Image", img);
+        waitKey(0);
+    }    
+
+void showRetrievedImage(const String &dirname, int &index)
+    {
+        vector<String> files;
+        glob(dirname, files);
+        Mat img = imread(files[index], IMREAD_UNCHANGED); 
+        namedWindow("Retrieved Image", WINDOW_AUTOSIZE);
+        imshow("Retrieved Image", img);
+        waitKey(0);
+    } 
+
+int main(){
+
+    vector<Mat> images;
+    load_flat_images("./EigenThermal", images, false); //images as rows 
+
+    cout << "Number of images is: " << images.size() << endl; //number of images in the folder, rows
+    cout << "Number of pixels for each image is: " << images[0].cols << endl;
+
+    Mat avg_train_face = average_face(images, true);
+    Mat PCA_data = prepareDataForPCA(images);
+    
+    //Calculate PCA of the data matrix
+    cout << "Calculating PCA ..." << endl;
+    PCA pca(PCA_data, Mat(), PCA::DATA_AS_ROW); 
+    cout << "DONE"<< endl;
+    cout << (int)PCA_data.at<uchar>(0,0) << endl;
+
+    // eigenvectors
+    Mat eigenVectors = pca.eigenvectors;
+    cout << eigenVectors.rows << endl;
+    cout << eigenVectors.cols << endl;
+
+    Mat eigenValues = pca.eigenvalues;
+    cout << eigenValues.rows << endl;
+    cout << eigenValues.cols << endl;
+
+    normalize(eigenVectors, eigenVectors, 0, 255, NORM_MINMAX); // normalize eigenvectors for display
+    
+    // Display the eigenfaces corresponding to the 10 largest eigenvalues   
+    cout << "EigenImages corresponding to the 10 highest eigenvalues ..." << endl;
+    for(int i = 0; i < 10 ; i++)
+    {
+        //cout << eigenVectors.row(i) << endl;
+        Mat eigenFace = eigenVectors.row(i).reshape(0, 512);
+        eigenFace.convertTo(eigenFace, CV_8U);
+        imwrite( "./Results_Thermal/eigenFace" + to_string(i) + ".jpg", eigenFace);
+        imshow("EigenFaces", eigenFace);
+        waitKey(0);
+        //Mat eigenImages.push_back(eigenFace);
+        
+    }
+    cout << "DONE"<< endl;
+
+    // Display the eigenfaces corresponding to the 10 smallest eigenvalues   
+    cout << "EigenImages corresponding to the 10 smallest eigenvalues ..." << endl; 
+    for(int i = eigenVectors.rows - 1; i > eigenVectors.rows - 11; i--)
+    {
+
+        Mat eigenFace = eigenVectors.row(i).reshape(0, 512);
+        eigenFace.convertTo(eigenFace, CV_8U);
+        imshow("EigenImages", eigenFace);
+        waitKey(0);
+        //Mat eigenImages.push_back(eigenFace);
+        
+    }
+    cout << "DONE"<< endl;
